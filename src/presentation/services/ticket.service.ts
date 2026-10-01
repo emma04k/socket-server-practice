@@ -1,8 +1,11 @@
 import { UuidAdapater } from "../../config/uuid.adapter";
 import { Ticket } from "../../domain/interfaces/ticket";
+import { WssService } from "./wss.service";
 
 
 export class TicketService {
+
+    private readonly wssService = WssService;
 
     public readonly tickets:Ticket[] = [
         {id:UuidAdapater.V4(),number:1,createdAt:new Date(),done:false},
@@ -37,16 +40,12 @@ export class TicketService {
         }
 
         this.tickets.push(ticket);
-        //TODO:WS
+        this.onTicketNumberChanged()
 
         return ticket
     }
 
     public drawTicket(desk:string){
-
-        const validTicket = this.workingOnTickets.find(t => t.handleAtDesk === desk);
-        if(validTicket) return { status: 'error', message:`El ${desk} se encuentra ocupado con el ticket ${validTicket.number}`}
-
         const ticket = this.tickets.find(t => !t.handleAtDesk);
         if(!ticket) return { status: 'error', message:'No hay tickets pendientes' }
 
@@ -55,9 +54,10 @@ export class TicketService {
 
         this.workingOnTickets.unshift({...ticket}); 
 
-        //TODO: WS
+        this.onTicketNumberChanged();
+        this.onWorkinOnChanged();
 
-        return {status: 'Ok', ticket}
+        return {status: 'ok', ticket}
     }
 
     public onDoneTicket(id:string){
@@ -71,7 +71,15 @@ export class TicketService {
         const index = this.workingOnTickets.findIndex(t => t.id === id)
         if(index !== -1){this.workingOnTickets.splice(index,1);}
 
-        return { status: 'Ok', ticket}
+        return { status: 'ok', ticket}
     
+    }
+
+    private onTicketNumberChanged(){
+        this.wssService.instance.sendMessage('on-ticket-count-changed', this.pendingTickets.length);
+    }
+
+    private onWorkinOnChanged(){
+        this.wssService.instance.sendMessage('on-working-changed', this.lastWorkingOnTickets);
     }
 }

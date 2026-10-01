@@ -12,6 +12,19 @@ npm run dev
 
 The server starts at `http://localhost:3000` by default. Change `PORT` in `.env` to use another port.
 
+## Use the queue UI
+
+After starting the server, open the home page and choose a flow:
+
+| URL | Purpose |
+| --- | --- |
+| `http://localhost:3000/` | Opens the queue home page. |
+| `/new-ticket.html` | Creates new tickets. |
+| `/desk.html?escritorio=A` | Lets desk `A` draw and complete tickets. |
+| `/public.html` | Displays the four most recently assigned tickets. |
+
+Open the public display and one or more desk pages in separate browser tabs to see updates as tickets are assigned.
+
 ## Scripts
 
 | Command | Purpose |
@@ -46,7 +59,7 @@ curl http://localhost:3000/api/ticket/draw/A
 
 Tickets are kept in memory, so restarting the process restores the initial queue and discards tickets created while it was running.
 
-## WebSocket
+## Real-time updates
 
 The WebSocket server accepts connections at:
 
@@ -54,7 +67,14 @@ The WebSocket server accepts connections at:
 ws://localhost:3000/ws
 ```
 
-It currently establishes and logs connections; ticket-update broadcasts have not yet been implemented.
+Connected clients receive JSON messages when the queue changes:
+
+| Event type | Payload | Trigger |
+| --- | --- | --- |
+| `on-ticket-count-changed` | Number of pending tickets | A ticket is created or assigned to a desk. |
+| `on-working-changed` | Up to four assigned tickets | A desk draws a ticket. |
+
+The browser UI reconnects automatically if the WebSocket connection closes.
 
 ## Project structure
 
